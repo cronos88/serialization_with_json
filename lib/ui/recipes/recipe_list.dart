@@ -1,9 +1,15 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../network/recipe_model.dart';
 import '../colors.dart';
+import '../recipe_card.dart';
 import '../widgets/custom_dropdown.dart';
+import 'recipe_details.dart';
 
 class RecipeList extends StatefulWidget {
   const RecipeList({Key? key}) : super(key: key);
@@ -26,36 +32,49 @@ class _RecipeListState extends State<RecipeList> {
   bool loading = false;
   bool inErrorState = false;
   List<String> previousSearches = <String>[];
-  // TODO: Add _currentRecipes1
+  // Add _currentRecipes1 - Paso 1
+  APIRecipeQuery? _currentRecipes1;
 
   @override
   void initState() {
     super.initState();
-    // TODO: Call loadRecipes()
+    // Call loadRecipes() - Paso 3
+    loadRecipes();
     getPreviousSearches();
     searchTextController = TextEditingController(text: '');
-    _scrollController
-      .addListener(() {
-        final triggerFetchMoreSize =
-            0.7 * _scrollController.position.maxScrollExtent;
+    _scrollController.addListener(() {
+      final triggerFetchMoreSize =
+          0.7 * _scrollController.position.maxScrollExtent;
 
-        if (_scrollController.position.pixels > triggerFetchMoreSize) {
-          if (hasMore &&
-              currentEndPosition < currentCount &&
-              !loading &&
-              !inErrorState) {
-            setState(() {
-              loading = true;
-              currentStartPosition = currentEndPosition;
-              currentEndPosition =
-                  min(currentStartPosition + pageCount, currentCount);
-            });
-          }
+      if (_scrollController.position.pixels > triggerFetchMoreSize) {
+        if (hasMore &&
+            currentEndPosition < currentCount &&
+            !loading &&
+            !inErrorState) {
+          setState(() {
+            loading = true;
+            currentStartPosition = currentEndPosition;
+            currentEndPosition =
+                min(currentStartPosition + pageCount, currentCount);
+          });
         }
-      });
+      }
+    });
   }
 
-  // TODO: Add loadRecipes
+  // loadRecipes - Paso 2
+  Future loadRecipes() async {
+    // 1. Carga recipes1.json del directorio assets. rootBundle es una propiedad
+    // de alto nivel que mantiene referencias a todos los items en la carpeta
+    // assets. Este carga el archivo como un string.
+    final jsonString = await rootBundle.loadString('assets/recipes1.json');
+    setState(() {
+      // 2. Usa el método incorporado jsonDecode() para convertir el string a un
+      // mapa, luego usa fromJson(), el cual fue generado por tí, para hacer
+      // una instancia de APIRecipeQuery.
+      _currentRecipes1 = APIRecipeQuery.fromJson(jsonDecode(jsonString));
+    });
+  }
 
   @override
   void dispose() {
@@ -181,16 +200,41 @@ class _RecipeListState extends State<RecipeList> {
     });
   }
 
-  // TODO: Replace method
   Widget _buildRecipeLoader(BuildContext context) {
-    if (searchTextController.text.length < 3) {
+    // 1. Chequea para ver si la lista de recetas es null
+    if (_currentRecipes1 == null || _currentRecipes1?.hits == null) {
       return Container();
     }
     // Show a loading indicator while waiting for the movies
-    return const Center(
-      child: CircularProgressIndicator(),
+    return Flexible(
+      child: ListView.builder(
+        itemCount: 1,
+        itemBuilder: (context, index) {
+          return Center(
+            child: _buildRecipeCard(context, _currentRecipes1!.hits, 0),
+          );
+        },
+      ),
     );
   }
 
-  // TODO: Add _buildRecipeCard
+  // Add _buildRecipeCard - Paso 4
+  Widget _buildRecipeCard(
+      BuildContext topLevelContext, List<APIHits> hits, int index) {
+    // 1. Encuentra la receta en el indice dado
+    final recipe = hits[index].recipe;
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          topLevelContext,
+          MaterialPageRoute(builder: (context) {
+            return const RecipeDetails();
+          }),
+        );
+      },
+      // 2. Llama recipeStringCard, el cual muestra una bonita tarjeta debajo
+      // del campo de búsqueda
+      child: recipeStringCard(recipe.image, recipe.label),
+    );
+  }
 }
