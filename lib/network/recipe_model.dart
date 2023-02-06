@@ -41,7 +41,7 @@ class APIHits {
 
   // 4. Añade los métodos para la serialización de JSON
   factory APIHits.fromJson(Map<String, dynamic> json) =>
-      _$APIHitsFromJson(this);
+      _$APIHitsFromJson(json);
 }
 
 // Add @JsonSerializable() class APIRecipe

@@ -27,4 +27,4 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// QUEDE EN PAGINA 370 - CREATING MODEL CLASS
+// QUEDE EN PAGINA 374 - GENERATING THE .PART FILE
