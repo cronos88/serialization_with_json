@@ -234,7 +234,7 @@ class _RecipeListState extends State<RecipeList> {
       },
       // 2. Llama recipeStringCard, el cual muestra una bonita tarjeta debajo
       // del campo de búsqueda
-      child: recipeStringCard(recipe.image, recipe.label),
+      child: recipeCard(recipe),
     );
   }
 }
