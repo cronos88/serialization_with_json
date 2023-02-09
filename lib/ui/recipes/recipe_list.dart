@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../network/recipe_model.dart';
+import '../../network/recipe_service.dart';
 import '../colors.dart';
 import '../recipe_card.dart';
 import '../widgets/custom_dropdown.dart';
@@ -23,7 +24,7 @@ class _RecipeListState extends State<RecipeList> {
 
   late TextEditingController searchTextController;
   final ScrollController _scrollController = ScrollController();
-  List currentSearchList = [];
+  List<APIHits> currentSearchList = [];
   int currentCount = 0;
   int currentStartPosition = 0;
   int currentEndPosition = 20;
@@ -60,6 +61,21 @@ class _RecipeListState extends State<RecipeList> {
         }
       }
     });
+  }
+
+  // getRecipeData() here
+  // 1. Toma una consulta y las posiciones inicial y final de los datos de la
+  // receta, que desde y para representar, respectivamente.
+  Future<APIRecipeQuery> getRecipeData(String query, int from, int to) async {
+    // 2. You define recipeJson, which stores the results from getRecipes(
+    // after it finishes. It uses the from and to fields from step 1.
+    final recipeJson = await RecipeService().getRecipes(query, from, to);
+    // 3. La variable RecipeMap usa json.decode() de Dart para decodificar la
+    // cadena en un mapa de tipo Map<String, dynamic>.
+    final recipeMap = json.decode(recipeJson);
+    // 4. Utilice el método de parseo JSON que creó en el capítulo anterior
+    // para crear un modelo APIRecipeQuery.
+    return APIRecipeQuery.fromJson(recipeMap);
   }
 
   // loadRecipes - Paso 2
@@ -211,8 +227,44 @@ class _RecipeListState extends State<RecipeList> {
         itemCount: 1,
         itemBuilder: (context, index) {
           return Center(
-            child: _buildRecipeCard(context, _currentRecipes1!.hits, 0),
+            child: _buildRecipeCard(context, _currentRecipes1!.hits, 1),
           );
+        },
+      ),
+    );
+  }
+
+  // Add _buildRecipeList()
+  Widget _buildRecipeList(BuildContext recipeListContext, List<APIHits> hits) {
+    // 2. Utiliza MediaQuery para obtener el tamaño de pantalla del dispositivo.
+    // Luego establece una altura de elemento fija y crea dos columnas de
+    // tarjetas cuyo ancho es la mitad del ancho del dispositivo.
+    final size = MediaQuery.of(context).size;
+    const itemHeight = 310;
+    final itemWidth = size.width / 2;
+    // 3. Devuelves un widget que es flexible en ancho y alto.
+    return Flexible(
+      // 4. GridView es similar a ListView, pero permite algunas combinaciones
+      // interesantes de filas y columnas. En este caso, usa GridView.builder()
+      // porque conoce la cantidad de elementos y usará un itemBuilder.
+      child: GridView.builder(
+        // 5. Utiliza _scrollController, creado en initState(), para detectar
+        // cuándo el desplazamiento llega a aproximadamente el 70% desde abajo.
+        controller: _scrollController,
+        // 6. El delegado SliverGridDelegateWithFixedCrossAxisCount tiene dos
+        // columnas y establece la relación de aspecto.
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: (itemWidth / itemHeight),
+        ),
+        // 7. La longitud de los elementos de la cuadrícula depende del número
+        // de elementos en la lista de resultados.
+        itemCount: hits.length,
+        // 8. itemBuilder ahora usa _buildRecipeCard() para devolver una
+        // tarjeta para cada receta. _buildRecipeCard() recupera la receta de
+        // la lista de aciertos usando hits[index].recipe.
+        itemBuilder: (BuildContext context, int index) {
+          return _buildRecipeCard(recipeListContext, hits, index);
         },
       ),
     );
